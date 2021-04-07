@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/jokeapi-go"
 )
 
-const token = "ODI4MTI5NTUzNzQ2MjMxMjk2.YGlFvw.5JJI6iAzAUJD0-e4b0zNFAmhEio"
+var token = os.Getenv("DISCORD_TOKEN")
 
 var BotID string
 
 func main() {
-
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -46,6 +47,14 @@ func main() {
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	jt := "single"
+	blacklist := []string{"nsfw", "religious", "political", "racist", "sexist", "explicit"}
+	ctgs := []string{"Misc", "Pun"}
+
+	api := jokeapi.New()
+	api.SetParams(&ctgs, &blacklist, &jt)
+	response := api.Fetch()
+	joke := strings.Join(response.Joke, "")
 
 	// Ignore all messages created by the bot itself
 	// This isn't required in this specific example but it's a good practice.
@@ -53,12 +62,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	// If the message is "ping" reply with "Pong!"
-	if m.Content == "ping" {
-		s.ChannelMessageSend(m.ChannelID, "Pong!")
+	if strings.ToLower(m.Content) == "tell me a joke" {
+		s.ChannelMessageSend(m.ChannelID, joke)
 	}
 
-	// If the message is "pong" reply with "Ping!"
-	if m.Content == "pong" {
-		s.ChannelMessageSend(m.ChannelID, "Ping!")
-	}
 }

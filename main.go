@@ -13,8 +13,6 @@ import (
 	"github.com/jokeapi-go"
 )
 
-// const token = DISCORD_TOKEN
-
 var BotID string
 
 func keyReader(key string) string {
@@ -62,9 +60,9 @@ func main() {
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	jt := "single"
-	blacklist := []string{"nsfw", "religious", "political", "racist", "sexist", "explicit"}
-	ctgs := []string{"Misc", "Pun"}
+	jt := ""
+	blacklist := []string{"nsfw", "religious", "political", "racist", "sexist"}
+	ctgs := []string{"Misc", "Pun", "Dark"}
 
 	api := jokeapi.New()
 	api.SetParams(&ctgs, &blacklist, &jt)
@@ -72,11 +70,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	joke := strings.Join(response.Joke, "")
 
 	// Ignore all messages created by the bot itself
-	// This isn't required in this specific example but it's a good practice.
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	// If the message is "ping" reply with "Pong!"
+
 	if strings.ToLower(m.Content) == "tell me a joke" {
 		s.ChannelMessageSend(m.ChannelID, joke)
 	}

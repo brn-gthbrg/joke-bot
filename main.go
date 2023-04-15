@@ -9,27 +9,59 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 	"github.com/jokeapi-go"
+
+	"context"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 )
 
 var BotID string
 
-func keyReader(key string) string {
+//for local use
+// func keyReader(key string) string {
 
-	// load .env file
-	err := godotenv.Load(".env")
+// 	// load .env file
+// 	err := godotenv.Load(".env")
 
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
+// 	if err != nil {
+// 		log.Fatalf("Error loading .env file")
+// 	}
 
-	return os.Getenv(key)
-}
+// 	return os.Getenv(key)
+// }
 
 func main() {
+	secretName := "jokekey"
+	region := "us-west-2"
+
+	config, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create Secrets Manager client
+	svc := secretsmanager.NewFromConfig(config)
+
+	input := &secretsmanager.GetSecretValueInput{
+		SecretId:     aws.String(secretName),
+		VersionStage: aws.String("AWSCURRENT"), // VersionStage defaults to AWSCURRENT if unspecified
+	}
+
+	result, err := svc.GetSecretValue(context.TODO(), input)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	// Decrypts secret using the associated KMS key.
+	var secretString string = *result.SecretString
+
 	// Create a new Discord session using the provided bot token.
-	token := keyReader("DISCORD_KEY")
+	// token := keyReader("DISCORD_KEY")
+	token := secretString
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		fmt.Println("error creating Discord session,", err)
@@ -55,7 +87,7 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
-	// Cleanly close down the Discord session.
+	// Close Discord session.
 	dg.Close()
 }
 
